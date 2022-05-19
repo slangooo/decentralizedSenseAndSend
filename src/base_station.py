@@ -6,15 +6,17 @@ from src.drone_agent import DroneAgent, get_successful_transmit_prob
 from src.channel_model import CellularUrban3GppUmi
 import itertools
 from src.math_tools import decision, numpy_object_array
+from src.q_manager_v2 import QManager as QManagerV2
 from src.q_manager import QManager
 import matplotlib.pyplot as plt
+
 
 class BaseStation:
     sensing_tasks_locs = None
     last_rewards = None
 
     def __init__(self, n_sub_channels=DEFAULT_N_SC, n_uavs=DEFAULT_N_UAVS,
-                 init_tasks_locations: List[Tuple[float, ...]] = INIT_TASK_LOCATIONS):
+                 init_tasks_locations: List[Tuple[float, ...]] = INIT_TASK_LOCATIONS, q_type='SA'):
         self.coords = Coords3d(0, 0, 0)
         self.n_sc = n_sub_channels
         self.n_uavs = n_uavs
@@ -25,14 +27,17 @@ class BaseStation:
                                                 np.random.choice(self.q_manager.state_space_y), 0)
                                        for _ in range(self.n_uavs)]
         else:
-            assert (self.n_uavs == len(init_tasks_locations))
+            # assert (self.n_uavs == len(init_tasks_locations))
             self.sensing_tasks_locs = [Coords3d(init_loc[0], init_loc[1], 0) for init_loc in init_tasks_locations]
 
         self.uavs = [DroneAgent(coords=(self.sensing_tasks_locs[i]) + Coords3d(0, 0, 100).copy(),
                                 sensing_task_loc=self.sensing_tasks_locs[i]) for i in
                      range(self.n_uavs)]
 
-        self.q_manager = QManager(self.uavs)
+        if q_type == 'SA':
+            self.q_manager = QManager(self.uavs)
+        else:
+            self.q_manager = QManagerV2(self.uavs)
 
         self.initialize_uavs_locations()
 
@@ -40,18 +45,18 @@ class BaseStation:
         trajs = self.select_trajectories()
         rewards_probs = self.get_cycle_reward_probabilities()
         cycle_rewards_sample = self.sample_rewards(rewards_probs)
-        cycle_rewards = cycle_rewards_sample
+        cycle_rewards = rewards_probs
         self.q_manager.update_q_values(cycle_rewards, self.cycle_count)
         self.cycle_count += 1
         self.reach_final_destination()
-        # TODO: comment out
-        for i in range(self.n_uavs):
-            q_manager_loc = np.append(self.q_manager.state_spaces_2d[i][self.q_manager.state_idxs[i][0]],
-                                      self.q_manager.state_space_z[self.q_manager.state_idxs[i][1]])
-            bs_loc = self.uavs[i].coords.np_array()
-            assert (np.all(q_manager_loc == bs_loc))
+        # # TODO: comment out
+        # for i in range(self.n_uavs):
+        #     q_manager_loc = np.append(self.q_manager.states_subspaces_2d[i][self.q_manager.state_idxs[i][0]],
+        #                               self.q_manager.state_space_z[self.q_manager.state_idxs[i][1]])
+        #     bs_loc = self.uavs[i].coords.np_array()
+        #     assert (np.all(q_manager_loc == bs_loc))
 
-        return cycle_rewards_sample
+        return cycle_rewards
 
     def reach_final_destination(self):
         for _uav in self.uavs:
@@ -73,6 +78,8 @@ class BaseStation:
 
     def select_trajectories(self):
         destinations = self.q_manager.select_action_in_cycle(self.cycle_count)
+        # destinations[0] = Coords3d(500, 0, 100)
+        # destinations[1] = Coords3d(-500, 0, 100)
         self.set_trajectories(destinations)
         return destinations
 
@@ -84,8 +91,6 @@ class BaseStation:
 
     def get_trajectories(self):
         return [_uav.get_trajectory(start_frame_idx=1) for _uav in self.uavs]
-
-
 
 
 if __name__ == '__main__':
@@ -108,9 +113,9 @@ if __name__ == '__main__':
         sum = 0
         discount = 1
         for j in range(i, len(rewards_per_cycle)):
-            sum+=rewards_per_cycle[j] *discount
+            sum += rewards_per_cycle[j] * discount
             discount *= DISCOUNT_RATIO
-        rewards_discounted_cumsum[i]=sum
+        rewards_discounted_cumsum[i] = sum
 
     plt.plot(rewards_discounted_cumsum)
     plt.show()

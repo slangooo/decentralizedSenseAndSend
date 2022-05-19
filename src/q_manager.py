@@ -39,7 +39,7 @@ class QManager:
 
     def initialize_state_action_qs(self):
         states_actions_qs = [self.uavs[i].get_single_states_actions_qs(self.state_space_x, self.state_space_y,
-                                                                       self.state_space_z, self.base_station_coords) for
+                                                                       self.state_space_z) for
                              i in range(self.n_uavs)]
 
         states_subspaces_2d = [i[0] for i in states_actions_qs]
@@ -68,7 +68,7 @@ class QManager:
     def initialize_uavs_locations_in_state_space(self):
         state_idxs = []
         for idx, uav in enumerate(self.uavs):
-            if Coords3d(0, 0, 0).get_distance_to(self.state_spaces_2d[idx][0]) < \
+            if Coords3d(0, 0, 0).get_distance_to(self.state_spaces_2d[idx][0]) > \
                     Coords3d(0, 0, 0).get_distance_to(self.state_spaces_2d[idx][-1]):
                 x, y = self.state_spaces_2d[idx][0]
                 state_idxs.append(0)
@@ -130,22 +130,20 @@ class QManager:
 
         for i in range(self.n_uavs):
             self.qs[i][self.last_q_idxs[i][0]][self.last_q_idxs[i][1], self.last_q_idxs[i][2], self.last_q_idxs[i][3]] \
-                = self.last_q_values[i] + learning_rate * (rewards[i] +
-                                                           self.discount_ratio * next_q_values[i] - self.last_q_values[
-                                                               i])
+                = self.last_q_values[i] + learning_rate * (rewards[i] + self.discount_ratio * next_q_values[i] - self.last_q_values[i])
             # print(self.qs[i][self.last_q_idxs[i][0]][self.last_q_idxs[i][1], self.last_q_idxs[i][2], self.last_q_idxs[i][3]])
 
     @staticmethod
     def get_learning_rate(cycle_number):
         # return 1 / (cycle_number ** (2 / 8))
         # return 1 / (cycle_number ** (2 / 3))
-        return 0.2
+        return 0.4
 
     @staticmethod
     def get_exploration_probability(cycle_number):
-        # return 0.8 * np.exp(-0.0003 * cycle_number)
+        return 0.8 * np.exp(-0.0003 * cycle_number)
         # return 0.8 * np.exp(-0.03 * cycle_number)
-        return 0.2
+        # return 0.2
 
     @staticmethod
     def select_action_from_qs(exploration_probability, q_values, q_idxs, actions):
@@ -208,7 +206,6 @@ class QManager:
                 self.actions_flags[uav_idx][state_2d_idx].nonzero()[0][_q_idx[2]]]
             assert (next_action[0] == action[0] and next_action[1] == action[1])
 
-        self.get_state_count_idx()
         return np.array(q_idxes), np.array(actions)
 
     def get_q_values_from_idxs(self, uav_idx, q_idxes):
