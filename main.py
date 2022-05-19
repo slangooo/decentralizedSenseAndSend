@@ -32,16 +32,16 @@ def run_simulation(N_CYCLES=10000, N_ITERATIONS=20, q_type='SA', plot=True):
 
 
 if __name__ == '__main__':
-    # sa_discounted_cumsum, sa_avg_rewards_cycle = run_simulation()
+    sa_discounted_cumsum, sa_avg_rewards_cycle = run_simulation()
     ma_discounted_cumsum, ma_avg_rewards_cycle = run_simulation(q_type='MA')
-    # np.savetxt('results/sa_discounted_cumsum.txt', sa_discounted_cumsum)
-    # np.savetxt('results/sa_avg_rewards_cycle.txt', sa_avg_rewards_cycle)
-    # np.savetxt('results/ma_discounted_cumsum.txt', ma_discounted_cumsum)
-    # np.savetxt('results/ma_avg_rewards_cycle.txt', ma_avg_rewards_cycle)
-    #
-    # plt.plot(sa_discounted_cumsum)
-    # plt.plot(ma_discounted_cumsum)
-    # plt.xlabel('Number of Cycles')
-    # plt.ylabel('Average Cumulative Sum of Discounted Rewards')
-    # plt.legend(['Single Agent', 'Opponent Modeling'], loc="upper left")
-    # plt.show()
+    np.savetxt('results/sa_discounted_cumsum.txt', sa_discounted_cumsum)
+    np.savetxt('results/sa_avg_rewards_cycle.txt', sa_avg_rewards_cycle)
+    np.savetxt('results/ma_discounted_cumsum.txt', ma_discounted_cumsum)
+    np.savetxt('results/ma_avg_rewards_cycle.txt', ma_avg_rewards_cycle)
+    
+    plt.plot(sa_discounted_cumsum)
+    plt.plot(ma_discounted_cumsum)
+    plt.xlabel('Number of Cycles')
+    plt.ylabel('Average Cumulative Sum of Discounted Rewards')
+    plt.legend(['Single Agent', 'Opponent Modeling'], loc="upper left")
+    plt.show()
